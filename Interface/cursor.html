@@ -1,0 +1,414 @@
+<!--修改 searchBackups 函数，连接到你的实际后端 API-->
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>备份记录查看</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .page-layout {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .left-content {
+            flex: 2; /* 占据左侧2/3区域 */
+        }
+        
+        .right-content {
+            flex: 1; /* 占据右侧1/3区域 */
+        }
+        
+        .search-form {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .backup-list {
+            text-align: left;
+            margin-top: 30px;
+        }
+        
+        .backup-item {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 6px;
+            background: white;
+            margin-bottom: 15px;
+        }
+        
+        .backup-item.modified {
+            color: red;
+        }
+        
+        .timestamp {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .event {
+            color: #666;
+        }
+        
+        .date-input {
+            padding: 8px;
+            margin-right: 10px;
+        }
+        
+        .search-btn, .backup-btn {
+            padding: 8px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .backup-btn {
+            margin-top: 20px;
+            background: #28a745;
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+        }
+        
+        .recent-backups {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: left;
+            background: #f9f9f9;
+            height: fit-content;
+        }
+        
+        .recent-backups h2 {
+            margin-top: 0;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .header-with-action {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .home-link {
+            margin-bottom: 20px;
+            display: block;
+        }
+        
+        .refresh-btn {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        
+        .refresh-btn:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="home-link">← 返回主页</a>
+        <h1>备份记录查看</h1>
+        <button class="refresh-btn" onclick="refreshData()">刷新数据</button>
+        
+        <div class="page-layout">
+            <!-- 左侧区域 - 占2/3 -->
+            <div class="left-content">
+                <div class="search-form">
+                    <div class="header-with-action">
+                        <h2>按时间搜索</h2>
+                    </div>
+                    <form id="searchForm">
+                        <label>开始时间：</label>
+                        <input type="datetime-local" class="date-input" id="startDate" required>
+                        
+                        <label>结束时间：</label>
+                        <input type="datetime-local" class="date-input" id="endDate" required>
+                        
+                        <button type="submit" class="search-btn">搜索</button>
+                    </form>
+                </div>
+                
+                <div id="searchResults" class="backup-list" style="display: none;">
+                    <h2>搜索结果：</h2>
+                    <div id="backupList">
+                        <!-- 搜索结果将在这里动态显示 -->
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧区域 - 占1/3 -->
+            <div class="right-content">
+                <div class="recent-backups">
+                    <h2>最新备份</h2>
+                    <div id="recentBackupList">
+                        <!-- 最新备份记录将在这里动态显示 -->
+                    </div>
+                </div>
+                
+                <button id="backupBtn" class="backup-btn">立即备份</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 页面加载时显示最新三条备份记录
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取最新的三条备份记录
+            fetchRecentBackups();
+        });
+        
+        document.getElementById('searchForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            // 搜索备份数据
+            searchBackups(startDate, endDate);
+        });
+        
+        // 添加备份按钮事件监听
+        document.getElementById('backupBtn').addEventListener('click', function() {
+            triggerBackup();
+        });
+        
+        function fetchRecentBackups() {
+            // 从API获取最近的日志数据
+            fetch('/api/get-recent-backups')
+                .then(response => response.json())
+                .then(json_list => {
+                    // 将日志数据转换为显示格式
+                    const backupData = json_list.map(item => {
+                        // 检查是否为RAPID修改事件
+                        const isRapidModified = item.code === "10063";
+                        return {
+                            time: item.tstamp, // 使用时间戳
+                            event: item._title, // 使用标题
+                            code: item.code, // 使用事件代码
+                            isRapidModified: isRapidModified // 根据代码判断是否为修改事件
+                        };
+                    });
+                    
+                    // 显示数据
+                    displayRecentBackups(backupData);
+                })
+                .catch(error => {
+                    console.error('获取备份数据失败:', error);
+                    // 错误处理
+                    alert('获取备份数据失败：' + error);
+                });
+        }
+
+        function searchBackups(startDate, endDate) {
+            // 从API获取搜索结果
+            fetch(`/api/search-backups?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`)
+                .then(response => response.json())
+                .then(json_list => {
+                    // 将日志数据转换为显示格式
+                    const backupData = json_list.map(item => {
+                        // 检查是否为RAPID修改事件
+                        const isRapidModified = item.code === "10063";
+                        return {
+                            time: item.tstamp, // 使用时间戳
+                            event: item._title, // 使用标题
+                            code: item.code, // 使用事件代码
+                            isRapidModified: isRapidModified // 根据代码判断是否为修改事件
+                        };
+                    });
+                    
+                    // 显示搜索结果区域
+                    document.getElementById('searchResults').style.display = 'block';
+                    displaySearchResults(backupData);
+                })
+                .catch(error => {
+                    console.error('搜索备份数据失败:', error);
+                    // 错误处理
+                    alert('搜索备份数据失败：' + error);
+                });
+        }
+
+        function triggerBackup() {
+            // 显示加载状态
+            document.getElementById('backupBtn').innerText = '备份中...';
+            document.getElementById('backupBtn').disabled = true;
+            
+            // 这里应该是真实的API调用触发机器人控制器执行备份，现在用模拟数据演示
+            setTimeout(() => {
+                // 模拟备份成功后的新记录
+                const newBackup = {
+                    time: new Date().toLocaleString('zh-CN'),
+                    location: '本地数据中心',
+                    event: '手动触发备份',
+                    status: '成功',
+                    isRapidModified: false
+                };
+                
+                // 获取当前显示的备份记录
+                const recentBackupList = document.getElementById('recentBackupList');
+                
+                // 在最顶部添加新备份记录
+                const backupItem = document.createElement('div');
+                backupItem.className = 'backup-item';
+                backupItem.innerHTML = `
+                    <div>1. Date: ${newBackup.time}</div>
+                    <div style="margin-left: 20px;">Location: ${newBackup.location}</div>
+                    <div style="margin-left: 20px;">Detail: ${newBackup.event}</div>
+                `;
+                
+                // 先清空原有内容，再添加新的备份记录和之前的记录
+                recentBackupList.innerHTML = '';
+                recentBackupList.appendChild(backupItem);
+                
+                // 重新获取全部最新记录
+                fetchRecentBackups();
+                
+                // 恢复按钮状态
+                document.getElementById('backupBtn').innerText = '立即备份';
+                document.getElementById('backupBtn').disabled = false;
+                
+                // 显示成功提示
+                alert('备份成功！新备份已添加到"最新备份"列表。');
+            }, 2000); // 模拟网络延迟
+        }
+
+        function displayRecentBackups(backups) {
+            const backupList = document.getElementById('recentBackupList');
+            backupList.innerHTML = '';
+            
+            // 只显示最新的三条记录
+            const recentBackups = backups.slice(0, 3);
+            
+            recentBackups.forEach((backup, index) => {
+                displayBackupItem(backup, index + 1, backupList);
+            });
+        }
+        
+        function displaySearchResults(backups) {
+            const backupList = document.getElementById('backupList');
+            backupList.innerHTML = '';
+            
+            backups.forEach((backup, index) => {
+                displayBackupItem(backup, index + 1, backupList);
+            });
+        }
+        
+        function displayBackupItem(backup, number, container) {
+            const backupItem = document.createElement('div');
+            backupItem.className = backup.isRapidModified ? 'backup-item modified' : 'backup-item';
+            
+            const timestamp = document.createElement('div');
+            timestamp.className = 'timestamp';
+            timestamp.textContent = backup.time;
+            
+            const event = document.createElement('div');
+            event.className = 'event';
+            event.textContent = backup.event;
+            
+            const code = document.createElement('div');
+            code.className = 'event';
+            code.textContent = `事件代码: ${backup.code}`;
+            
+            backupItem.appendChild(timestamp);
+            backupItem.appendChild(event);
+            backupItem.appendChild(code);
+            container.appendChild(backupItem);
+        }
+
+        function refreshData() {
+            // 更新为使用实际API获取数据
+            fetch('/api/get-recent-backups')
+                .then(response => response.json())
+                .then(data => {
+                    const backupList = document.getElementById('backupList');
+                    backupList.innerHTML = '';
+                    
+                    data.forEach(item => {
+                        const backupItem = document.createElement('div');
+                        const isModified = item.code === "10063";
+                        backupItem.className = `backup-item ${isModified ? 'modified' : ''}`;
+                        
+                        const timestamp = document.createElement('div');
+                        timestamp.className = 'timestamp';
+                        timestamp.textContent = item.tstamp;
+                        
+                        const event = document.createElement('div');
+                        event.className = 'event';
+                        event.textContent = item._title;
+                        
+                        const code = document.createElement('div');
+                        code.className = 'event';
+                        code.textContent = `事件代码: ${item.code}`;
+                        
+                        backupItem.appendChild(timestamp);
+                        backupItem.appendChild(event);
+                        backupItem.appendChild(code);
+                        backupList.appendChild(backupItem);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching backup data:', error);
+                });
+        }
+
+        // 添加从备份文件获取数据的函数
+        function getRecentBackupsFromFile() {
+            return fetch('/api/read-backup-file')
+                .then(response => response.json())
+                .then(data => {
+                    // 解析backup.txt中的数据
+                    const events = [];
+                    // 使用正则表达式提取事件信息
+                    const matches = data.match(/Event Code: (\d+), Event Time: (.+)/g);
+                    
+                    if (matches) {
+                        matches.forEach(match => {
+                            const parts = match.match(/Event Code: (\d+), Event Time: (.+)/);
+                            if (parts && parts.length > 2) {
+                                events.push({
+                                    code: parts[1],
+                                    tstamp: parts[2],
+                                    _title: parts[1] === "10063" ? "RAPID程序已修改" : "系统事件"
+                                });
+                            }
+                        });
+                    }
+                    
+                    return events;
+                });
+        }
+
+        // 页面加载时自动刷新数据
+        document.addEventListener('DOMContentLoaded', refreshData);
+    </script>
+</body>
+</html>

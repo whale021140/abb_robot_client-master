@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>程序修改记录查看</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .search-section {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        
+        .search-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            align-items: center;
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        .search-btn {
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        
+        .log-content {
+            max-height: 100px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            font-family: monospace;
+            background-color: #f8f8f8;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        
+        .home-link {
+            margin-bottom: 20px;
+            display: block;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+            gap: 5px;
+        }
+        
+        .pagination button {
+            padding: 8px 12px;
+            background: #f1f1f1;
+            border: 1px solid #ddd;
+            cursor: pointer;
+        }
+        
+        .pagination button.active {
+            background: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="home-link">← 返回主页</a>
+        <h1>程序修改记录查看</h1>
+        
+        <div class="search-section">
+            <h2>搜索修改记录</h2>
+            <div class="search-row">
+                <input type="text" id="searchKeyword" placeholder="输入关键字搜索..." class="search-input">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <label>开始日期：</label>
+                    <input type="date" id="startDate" class="search-input">
+                    <label>结束日期：</label>
+                    <input type="date" id="endDate" class="search-input">
+                </div>
+                <input type="text" id="searchFile" placeholder="搜索文件名..." class="search-input">
+                <button class="search-btn" onclick="searchRecords()">搜索</button>
+            </div>
+        </div>
+        
+        <div id="recordsTable">
+            <table>
+                <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>修改时间</th>
+                        <th>修改文件</th>
+                        <th>日志内容</th>
+                        <th>修改者</th>
+                    </tr>
+                </thead>
+                <tbody id="recordsBody">
+                    <!-- 记录将动态添加到这里 -->
+                </tbody>
+            </table>
+            
+            <div class="pagination" id="pagination">
+                <!-- 分页按钮将在这里动态生成 -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 页面加载时获取所有记录
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchModificationRecords();
+        });
+        
+        function fetchModificationRecords() {
+            // 这里应该是API调用获取真实数据，现在使用模拟数据
+            const mockData = [];
+            
+            // 生成30条模拟数据
+            for (let i = 1; i <= 30; i++) {
+                mockData.push({
+                    id: i,
+                    time: new Date(2024, 4, 20 - (i % 10), 
+                                  10 + (i % 12), 
+                                  Math.floor(Math.random() * 60)).toLocaleString('zh-CN'),
+                    file: ['controller.js', 'robot_interface.py', 'backup_system.cpp', 'monitoring.js', 'data_logger.py'][i % 5],
+                    log: `修改了函数 ${['calculatePosition', 'updateBackup', 'monitorSystem', 'logData', 'connectRobot'][i % 5]}，
+增加了参数验证逻辑。
+${i % 3 === 0 ? '修复了数据处理错误。' : ''}
+${i % 4 === 0 ? '优化了性能。' : ''}`,
+                    author: ['张工', '李工', '王工', '系统管理员'][i % 4]
+                });
+            }
+            
+            displayRecords(mockData);
+            setupPagination(mockData.length);
+        }
+        
+        function searchRecords() {
+            const keyword = document.getElementById('searchKeyword').value.toLowerCase();
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const file = document.getElementById('searchFile').value.toLowerCase();
+            
+            // 这里应该是API调用搜索真实数据，现在使用模拟数据
+            // 生成模拟数据并应用搜索过滤
+            const mockData = [];
+            
+            for (let i = 1; i <= 30; i++) {
+                const record = {
+                    id: i,
+                    time: new Date(2024, 4, 20 - (i % 10), 
+                                  10 + (i % 12), 
+                                  Math.floor(Math.random() * 60)).toLocaleString('zh-CN'),
+                    file: ['controller.js', 'robot_interface.py', 'backup_system.cpp', 'monitoring.js', 'data_logger.py'][i % 5],
+                    log: `修改了函数 ${['calculatePosition', 'updateBackup', 'monitorSystem', 'logData', 'connectRobot'][i % 5]}，
+增加了参数验证逻辑。
+${i % 3 === 0 ? '修复了数据处理错误。' : ''}
+${i % 4 === 0 ? '优化了性能。' : ''}`,
+                    author: ['张工', '李工', '王工', '系统管理员'][i % 4]
+                };
+                
+                // 应用搜索过滤
+                if (keyword && !record.log.toLowerCase().includes(keyword) && 
+                    !record.author.toLowerCase().includes(keyword)) {
+                    continue;
+                }
+                
+                // 日期范围过滤
+                if (startDate || endDate) {
+                    const recordDate = new Date(record.time);
+                    const start = startDate ? new Date(startDate) : null;
+                    const end = endDate ? new Date(endDate) : null;
+                    
+                    if (start && recordDate < start) {
+                        continue;
+                    }
+                    if (end && recordDate > end) {
+                        continue;
+                    }
+                }
+                
+                if (file && !record.file.toLowerCase().includes(file)) {
+                    continue;
+                }
+                
+                mockData.push(record);
+            }
+            
+            displayRecords(mockData);
+            setupPagination(mockData.length);
+        }
+        
+        function displayRecords(records, page = 1, perPage = 10) {
+            const tableBody = document.getElementById('recordsBody');
+            tableBody.innerHTML = '';
+            
+            // 计算分页
+            const start = (page - 1) * perPage;
+            const end = start + perPage;
+            const paginatedRecords = records.slice(start, end);
+            
+            paginatedRecords.forEach(record => {
+                const row = document.createElement('tr');
+                
+                row.innerHTML = `
+                    <td>${record.id}</td>
+                    <td>${record.time}</td>
+                    <td>${record.file}</td>
+                    <td><div class="log-content">${record.log}</div></td>
+                    <td>${record.author}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+        
+        function setupPagination(totalRecords, currentPage = 1, perPage = 10) {
+            const paginationElement = document.getElementById('pagination');
+            paginationElement.innerHTML = '';
+            
+            const totalPages = Math.ceil(totalRecords / perPage);
+            
+            // 前一页按钮
+            const prevButton = document.createElement('button');
+            prevButton.textContent = '上一页';
+            prevButton.disabled = currentPage === 1;
+            prevButton.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    goToPage(currentPage - 1);
+                }
+            });
+            paginationElement.appendChild(prevButton);
+            
+            // 页码按钮
+            for (let i = 1; i <= totalPages; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                pageButton.classList.toggle('active', i === currentPage);
+                pageButton.addEventListener('click', () => goToPage(i));
+                paginationElement.appendChild(pageButton);
+            }
+            
+            // 下一页按钮
+            const nextButton = document.createElement('button');
+            nextButton.textContent = '下一页';
+            nextButton.disabled = currentPage === totalPages;
+            nextButton.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    goToPage(currentPage + 1);
+                }
+            });
+            paginationElement.appendChild(nextButton);
+        }
+        
+        function goToPage(page) {
+            // 重新加载数据到指定页
+            fetchModificationRecords();
+            // 因为这是模拟数据，实际中应该是传递页码参数给API
+            // 然后用新数据更新表格和分页
+            
+            // 更新分页UI
+            const buttons = document.querySelectorAll('#pagination button');
+            buttons.forEach(button => {
+                if (button.textContent === page.toString()) {
+                    button.classList.add('active');
+                } else if (button.textContent !== '上一页' && button.textContent !== '下一页') {
+                    button.classList.remove('active');
+                }
+            });
+        }
+    </script>
+</body>
+</html> 

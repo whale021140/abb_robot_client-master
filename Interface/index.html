@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>系统记录查询</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 100px auto;
+            padding: 40px;
+            text-align: center;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            margin-bottom: 40px;
+            color: #333;
+        }
+        
+        .query-panel {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        select {
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-width: 250px;
+        }
+        
+        .query-btn {
+            padding: 12px 30px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        
+        .query-btn:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>系统记录查询</h1>
+        
+        <div class="query-panel">
+            <select id="recordType">
+                <option value="backup">备份记录查看</option>
+                <option value="modification">程序修改记录查看</option>
+            </select>
+            
+            <button class="query-btn" onclick="navigateToSelectedPage()">查询</button>
+        </div>
+    </div>
+
+    <script>
+        function navigateToSelectedPage() {
+            const selectedValue = document.getElementById('recordType').value;
+            
+            if (selectedValue === 'backup') {
+                window.location.href = 'cursor.html';  // 跳转到备份记录页面
+            } else if (selectedValue === 'modification') {
+                window.location.href = 'modification-records.html';  // 跳转到程序修改记录页面
+            }
+        }
+    </script>
+</body>
+</html> 
